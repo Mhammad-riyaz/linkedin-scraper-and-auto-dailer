@@ -1,0 +1,133 @@
+<header><header>
+
+  <h1>Call Logs</h1>  <h1>📞 Autodialer - Call Logs</h1>
+
+  <p class="subtitle"><%= link_to "← Back to Dashboard", calls_path, style: "color: #1a1a1a; text-decoration: none;" %></p>  <p class="subtitle"><%= link_to "← Back to Dashboard", calls_path, style: "color: #667eea;" %></p>
+
+</header></header>
+
+
+
+<div class="panel"><!-- Stats Dashboard -->
+
+  <h2>All Call Logs</h2><div class="stats">
+
+    <div class="stat-card">
+
+  <% if @calls.any? %>    <div class="stat-number"><%= @stats[:total] %></div>
+
+    <table class="logs-table">    <div class="stat-label">Total Calls</div>
+
+      <thead>  </div>
+
+        <tr>  
+
+          <th>ID</th>  <div class="stat-card pending">
+
+          <th>Phone Number</th>    <div class="stat-number"><%= @stats[:pending] %></div>
+
+          <th>Status</th>    <div class="stat-label">Pending</div>
+
+          <th>Call SID</th>  </div>
+
+          <th>Duration</th>  
+
+          <th>Called At</th>  <div class="stat-card completed">
+
+          <th>Error</th>    <div class="stat-number"><%= @stats[:completed] %></div>
+
+          <th>Actions</th>    <div class="stat-label">Completed</div>
+
+        </tr>  </div>
+
+      </thead>  
+
+      <tbody>  <div class="stat-card failed">
+
+        <% @calls.each do |call| %>    <div class="stat-number"><%= @stats[:failed] %></div>
+
+          <tr>    <div class="stat-label">Failed/No Answer</div>
+
+            <td><%= call.id %></td>  </div>
+
+            <td><%= call.phone_number %></td></div>
+
+            <td>
+
+              <span class="status-badge status-<%= call.status || 'pending' %>"><div class="panel">
+
+                <%= (call.status || 'pending').humanize %>  <h2>📊 All Call Logs</h2>
+
+              </span>  
+
+            </td>  <% if @calls.any? %>
+
+            <td><%= call.call_sid || "-" %></td>    <table class="logs-table">
+
+            <td><%= call.call_duration || "-" %></td>      <thead>
+
+            <td>        <tr>
+
+              <%= call.called_at ? call.called_at.strftime("%b %d, %Y %I:%M %p") : "-" %>          <th>ID</th>
+
+            </td>          <th>Phone Number</th>
+
+            <td>          <th>Status</th>
+
+              <%= call.error_message ? call.error_message.truncate(50) : "-" %>          <th>Call SID</th>
+
+            </td>          <th>Duration</th>
+
+            <td>          <th>Called At</th>
+
+              <%= button_to "Delete", call_path(call), method: :delete,           <th>Error</th>
+
+                  class: "btn btn-danger",           <th>Actions</th>
+
+                  data: { confirm: "Delete this call record?" } %>        </tr>
+
+            </td>      </thead>
+
+          </tr>      <tbody>
+
+        <% end %>        <% @calls.each do |call| %>
+
+      </tbody>          <tr>
+
+    </table>            <td><%= call.id %></td>
+
+  <% else %>            <td><%= call.phone_number %></td>
+
+    <p style="text-align: center; color: #999; padding: 48px 0;">            <td>
+
+      No call logs available.              <span class="status-badge status-<%= call.status %>">
+
+    </p>                <%= call.status.humanize %>
+
+  <% end %>              </span>
+
+</div>            </td>
+
+            <td><%= call.call_sid || "-" %></td>
+            <td><%= call.call_duration || "-" %></td>
+            <td>
+              <%= call.called_at ? call.called_at.strftime("%b %d, %Y %I:%M %p") : "-" %>
+            </td>
+            <td>
+              <%= call.error_message ? call.error_message.truncate(50) : "-" %>
+            </td>
+            <td>
+              <%= button_to "Delete", call_path(call), method: :delete, 
+                  class: "btn btn-danger", 
+                  data: { confirm: "Delete this call record?" } %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p style="text-align: center; color: #999; padding: 40px;">
+      No call logs available.
+    </p>
+  <% end %>
+</div>

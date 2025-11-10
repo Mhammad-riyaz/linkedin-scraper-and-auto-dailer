@@ -1,0 +1,132 @@
+<header>
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <h1>Autodialer</h1>
+      <p class="subtitle">Automated Call Management System</p>
+    </div>
+    <div>
+      <%= link_to "Blog", blog_path, class: "btn btn-secondary" %>
+    </div>
+  </div>
+</header>
+
+<!-- Main Content with Two Columns -->
+<div class="main-content">
+  <!-- LEFT COLUMN -->
+  <div class="left-column">
+    <!-- Add Phone Numbers Panel -->
+    <div class="panel">
+      <h2>Add Phone Numbers</h2>
+      
+      <div class="test-numbers">
+        <div class="test-numbers-title">Twilio Test Numbers</div>
+        <code>+15005550006</code> Valid
+        <code>+15005550009</code> Busy
+        <code>+15005550001</code> Invalid
+      </div>
+      
+      <div style="margin-top: 32px;">
+        <%= form_with url: bulk_create_calls_path, method: :post do |f| %>
+          <div class="form-group">
+            <label>Paste Phone Numbers</label>
+            <%= f.text_area :phone_numbers, value: "+15005550006\n+15005550009\n+15005550001", rows: 6, required: false %>
+          </div>
+          <%= f.submit "Add Numbers", class: "btn btn-primary btn-block" %>
+        <% end %>
+      </div>
+      
+      <div style="margin-top: 32px; padding-top: 32px; border-top: 1px solid #e5e5e5;">
+        <label>Or Upload Excel File</label>
+        <%= form_with url: upload_excel_calls_path, method: :post, multipart: true, id: "excel-upload-form" do |f| %>
+          <div class="file-upload-wrapper" onclick="document.getElementById('excel-file-input').click()">
+            <%= f.file_field :excel_file, accept: ".xlsx,.xls,.csv", id: "excel-file-input", style: "display: none;" %>
+            <div class="file-upload-label">
+              <strong>Click to upload</strong> or drag and drop<br>
+              <small style="color: #999;">Excel (.xlsx, .xls) or CSV files</small>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <!-- RIGHT COLUMN -->
+  <div class="right-column">
+    <!-- AI Command Prompt -->
+    <div class="ai-prompt-section">
+      <h2>AI Command</h2>
+      <p>Use natural language to make calls. Example: "Make a call to +919876543210"</p>
+      <%= form_with url: ai_command_calls_path, method: :post do |f| %>
+        <div class="form-group">
+          <%= f.text_field :command, placeholder: "Type your command here...", required: true %>
+        </div>
+        <%= f.submit "Execute Command", class: "btn btn-primary btn-block" %>
+      <% end %>
+    </div>
+    
+    <!-- Recent Calls Log -->
+    <div class="panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h2 style="margin-bottom: 0;">Call Logs</h2>
+        <%= form_with url: start_calling_calls_path, method: :post, local: true, style: "margin: 0;" do |f| %>
+          <%= f.submit "Start Calling All Pending", class: "btn btn-primary",
+              data: { confirm: "Start calling all pending numbers?" } %>
+        <% end %>
+      </div>
+      
+      <% if @calls.any? %>
+        <div class="table-wrapper">
+          <table class="logs-table">
+            <thead>
+              <tr>
+                <th>Phone Number</th>
+                <th>Status</th>
+                <th>Called At</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @calls.limit(20).each do |call| %>
+                <tr>
+                  <td><%= call.phone_number %></td>
+                  <td>
+                    <span class="status-badge status-<%= call.status || 'pending' %>">
+                      <%= (call.status || 'pending').humanize %>
+                    </span>
+                  </td>
+                  <td>
+                    <%= call.called_at ? call.called_at.strftime("%b %d, %Y %I:%M %p") : "-" %>
+                  </td>
+                  <td>
+                    <%= button_to "Delete", call_path(call), method: :delete, 
+                        class: "btn btn-danger", 
+                        data: { confirm: "Delete this call record?" } %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+        
+        <% if @calls.count > 20 %>
+          <p style="text-align: center; margin-top: 16px;">
+            <%= link_to "View All Logs (#{@calls.count} total)", logs_calls_path, class: "btn btn-secondary" %>
+          </p>
+        <% end %>
+      <% else %>
+        <p style="text-align: center; color: #999; padding: 48px 0;">
+          No calls yet. Add phone numbers to get started.
+        </p>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Auto-submit on file selection
+  document.getElementById('excel-file-input').addEventListener('change', function() {
+    if (this.files.length > 0) {
+      document.getElementById('excel-upload-form').submit();
+    }
+  });
+</script>

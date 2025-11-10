@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn Profile Scraper</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            padding: 40px;
+            border: 1px solid #e5e7eb;
+        }
+
+        h1 {
+            color: #111827;
+            font-size: 2rem;
+            margin-bottom: 8px;
+            text-align: center;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 36px;
+            font-size: 0.95rem;
+        }
+
+        .profiles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            color: #374151;
+            font-weight: 500;
+            margin-bottom: 6px;
+            font-size: 0.875rem;
+        }
+
+        .input-group input {
+            padding: 10px 14px;
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+            color: #111827;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: all 0.15s ease;
+            outline: none;
+        }
+
+        .input-group input::placeholder {
+            color: #9ca3af;
+        }
+
+        .input-group input:focus {
+            border-color: #0066cc;
+            box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+        }
+
+        .input-group input:not(:placeholder-shown) {
+            border-color: #9ca3af;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        button {
+            padding: 11px 24px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn-scrape {
+            background: #0066cc;
+            color: #ffffff;
+        }
+
+        .btn-scrape:hover:not(:disabled) {
+            background: #0052a3;
+        }
+
+        .btn-scrape:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-clear {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .btn-clear:hover {
+            background: #e5e7eb;
+        }
+
+        .btn-download {
+            background: #059669;
+            color: #ffffff;
+            display: none;
+        }
+
+        .btn-download:hover {
+            background: #047857;
+        }
+
+        .btn-download.visible {
+            display: inline-block;
+        }
+
+        .btn-stop {
+            background: #dc2626;
+            color: #ffffff;
+            display: none;
+        }
+
+        .btn-stop:hover {
+            background: #b91c1c;
+        }
+
+        .btn-stop.visible {
+            display: inline-block;
+        }
+
+        .status-container {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+            display: none;
+        }
+
+        .status-container.visible {
+            display: block;
+        }
+
+        .status-message {
+            color: #374151;
+            font-size: 0.9rem;
+            margin-bottom: 14px;
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #0066cc;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.85rem;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        .alert.visible {
+            display: block;
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .alert-success {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.6s linear infinite;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .info-box {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-left: 3px solid #0284c7;
+            padding: 14px 18px;
+            border-radius: 6px;
+            margin-bottom: 28px;
+            color: #0c4a6e;
+            font-size: 0.9rem;
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: 4px;
+            color: #075985;
+            font-weight: 600;
+        }
+
+        .error-log {
+            margin-top: 20px;
+            padding: 16px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-left: 3px solid #dc2626;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .error-log.visible {
+            display: block;
+        }
+
+        .error-log-title {
+            color: #991b1b;
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+        }
+
+        .error-log-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .error-log-item {
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            background: #fff;
+            border: 1px solid #fecaca;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: #7f1d1d;
+        }
+
+        .error-log-item strong {
+            color: #991b1b;
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LinkedIn Profile Scraper</h1>
+        <p class="subtitle">Enter up to 20 LinkedIn profile URLs to scrape</p>
+        
+        <div class="info-box">
+            <strong>Instructions</strong>
+            Default profiles are pre-filled. You can modify any field or clear all to start fresh.
+            Click "Scrape Profiles" to begin. The browser will open and show the scraping process.
+        </div>
+
+        <div id="alert" class="alert"></div>
+
+        <div class="profiles-grid" id="profilesGrid">
+            {% for i in range(20) %}
+            <div class="input-group">
+                <label for="profile{{ i + 1 }}">Profile {{ i + 1 }}</label>
+                <input 
+                    type="url" 
+                    id="profile{{ i + 1 }}" 
+                    name="profile{{ i + 1 }}"
+                    placeholder="https://www.linkedin.com/in/username/"
+                    value="{{ default_profiles[i] if i < default_profiles|length else '' }}"
+                >
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="button-group">
+            <button class="btn-scrape" id="scrapeBtn" onclick="startScraping()">
+                Scrape Profiles
+            </button>
+            <button class="btn-stop" id="stopBtn" onclick="stopScraping()">
+                Stop Scraping
+            </button>
+            <button class="btn-clear" onclick="clearAll()">
+                Clear All
+            </button>
+            <button class="btn-download" id="downloadBtn" onclick="downloadCSV()">
+                Download CSV
+            </button>
+        </div>
+
+        <div class="status-container" id="statusContainer">
+            <div class="status-message" id="statusMessage">Initializing...</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">0 / 0 profiles</div>
+        </div>
+
+        <div class="error-log" id="errorLog">
+            <div class="error-log-title">Failed Profiles</div>
+            <ul class="error-log-list" id="errorLogList">
+                <!-- Failed URLs will be added here dynamically -->
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let statusInterval = null;
+
+        function showAlert(message, type = 'error') {
+            const alert = document.getElementById('alert');
+            alert.className = `alert alert-${type} visible`;
+            alert.textContent = message;
+            setTimeout(() => {
+                alert.className = 'alert';
+            }, 5000);
+        }
+
+        function clearAll() {
+            for (let i = 1; i <= 20; i++) {
+                const input = document.getElementById(`profile${i}`);
+                input.value = '';
+            }
+            document.getElementById('errorLog').classList.remove('visible');
+            document.getElementById('errorLogList').innerHTML = '';
+            showAlert('All fields cleared', 'success');
+        }
+
+        async function startScraping() {
+            const profiles = [];
+            for (let i = 1; i <= 20; i++) {
+                const value = document.getElementById(`profile${i}`).value.trim();
+                if (value) {
+                    profiles.push(value);
+                }
+            }
+
+            if (profiles.length === 0) {
+                showAlert('Please enter at least one profile URL');
+                return;
+            }
+
+            const scrapeBtn = document.getElementById('scrapeBtn');
+            scrapeBtn.disabled = true;
+            scrapeBtn.innerHTML = 'Scraping... <span class="loader"></span>';
+
+            document.getElementById('statusContainer').classList.add('visible');
+            document.getElementById('downloadBtn').classList.remove('visible');
+            document.getElementById('stopBtn').classList.remove('visible');
+            
+            // Clear error log
+            document.getElementById('errorLog').classList.remove('visible');
+            document.getElementById('errorLogList').innerHTML = '';
+
+            try {
+                const response = await fetch('/scrape', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ profiles: profiles })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Start polling for status
+                    statusInterval = setInterval(checkStatus, 1000);
+                } else {
+                    showAlert(data.error || 'Failed to start scraping');
+                    scrapeBtn.disabled = false;
+                    scrapeBtn.textContent = 'Scrape Profiles';
+                    document.getElementById('statusContainer').classList.remove('visible');
+                }
+            } catch (error) {
+                showAlert('Network error: ' + error.message);
+                scrapeBtn.disabled = false;
+                scrapeBtn.textContent = 'Scrape Profiles';
+                document.getElementById('statusContainer').classList.remove('visible');
+            }
+        }
+
+        async function stopScraping() {
+            try {
+                const stopBtn = document.getElementById('stopBtn');
+                stopBtn.disabled = true;
+                stopBtn.textContent = 'Stopping...';
+                
+                const response = await fetch('/stop', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('statusMessage').textContent = 'Stopping scraper, please wait...';
+                    showAlert('Stop requested - scraper will stop after current profile', 'success');
+                } else {
+                    showAlert(data.error || 'Failed to stop scraping');
+                    stopBtn.disabled = false;
+                    stopBtn.textContent = 'Stop Scraping';
+                }
+            } catch (error) {
+                showAlert('Network error: ' + error.message);
+                const stopBtn = document.getElementById('stopBtn');
+                stopBtn.disabled = false;
+                stopBtn.textContent = 'Stop Scraping';
+            }
+        }
+
+        async function checkStatus() {
+            try {
+                const response = await fetch('/status');
+                const status = await response.json();
+
+                document.getElementById('statusMessage').textContent = status.message;
+                document.getElementById('progressText').textContent = 
+                    `${status.current_profile} / ${status.total_profiles} profiles`;
+
+                const progress = status.total_profiles > 0 
+                    ? (status.current_profile / status.total_profiles) * 100 
+                    : 0;
+                document.getElementById('progressFill').style.width = progress + '%';
+
+                // Display failed URLs in error log
+                if (status.failed_urls && status.failed_urls.length > 0) {
+                    const errorLog = document.getElementById('errorLog');
+                    const errorLogList = document.getElementById('errorLogList');
+                    
+                    errorLog.classList.add('visible');
+                    
+                    // Only add new errors, avoid duplicates
+                    const existingErrors = Array.from(errorLogList.children).map(li => li.dataset.url);
+                    
+                    status.failed_urls.forEach(url => {
+                        if (!existingErrors.includes(url)) {
+                            const li = document.createElement('li');
+                            li.className = 'error-log-item';
+                            li.dataset.url = url;
+                            li.innerHTML = `<strong>Failed to scrape:</strong>${url}`;
+                            errorLogList.appendChild(li);
+                        }
+                    });
+                }
+
+                // Show stop button only after first successful scrape
+                if (status.has_successful_scrape && status.is_scraping) {
+                    document.getElementById('stopBtn').classList.add('visible');
+                }
+
+                if (!status.is_scraping) {
+                    clearInterval(statusInterval);
+                    const scrapeBtn = document.getElementById('scrapeBtn');
+                    scrapeBtn.disabled = false;
+                    scrapeBtn.textContent = 'Scrape Profiles';
+                    document.getElementById('stopBtn').classList.remove('visible');
+
+                    if (status.csv_path) {
+                        showAlert('Scraping completed! You can now download the CSV.', 'success');
+                        document.getElementById('downloadBtn').classList.add('visible');
+                    } else if (status.message.includes('Error')) {
+                        showAlert(status.message);
+                    }
+                }
+            } catch (error) {
+                console.error('Status check error:', error);
+            }
+        }
+
+        async function downloadCSV() {
+            window.location.href = '/download';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+# Ruby/Rails
+*.rbc
+capybara-*.html
+.rspec
+/db/*.sqlite3
+/db/*.sqlite3-journal
+/db/*.sqlite3-*
+/public/system
+/coverage/
+/spec/tmp
+*.orig
+rerun.txt
+pickle-backup-store
+
+# Ignore all logfiles and tempfiles
+/log/*
+/tmp/*
+!/log/.keep
+!/tmp/.keep
+
+# Ignore pidfiles, but keep the directory
+/tmp/pids/*
+!/tmp/pids/.keep
+
+# Bundler
+/.bundle
+/vendor/bundle
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+/.vscode
+/.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+*.md
+QUICKSTART.md
+BLOG_DOCUMENTATION.md
+
+# Setup scripts (not needed in container)
+setup.sh
+setup.bat
+
+# Test files
+/test
+/spec
+
+# Node modules (if any)
+/node_modules
+/yarn-error.log
+yarn-debug.log*
+
+# Python cache (for blog generator)
+__pycache__/
+*.pyc
+
+# Output files from blog generator
+/lib/python_scripts/output/*.json

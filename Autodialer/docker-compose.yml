@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  autodialer:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - RAILS_ENV=production
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPEN_ROUTER_API_KEY=${OPEN_ROUTER_API_KEY}
+      - LLM_MODEL=${LLM_MODEL:-openai/gpt-4o-mini}
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
+    volumes:
+      - ./db:/app/db
+      - ./log:/app/log
+      - ./lib/python_scripts/output:/app/lib/python_scripts/output
+    restart: unless-stopped

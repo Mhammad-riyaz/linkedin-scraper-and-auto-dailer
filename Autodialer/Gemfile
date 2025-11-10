@@ -1,0 +1,19 @@
+source 'https://rubygems.org'
+
+gem 'rails', '~> 7.1.0'
+gem 'sqlite3', '~> 1.4'
+gem 'puma', '~> 6.0'
+gem 'twilio-ruby', '~> 6.0'
+gem 'dotenv-rails', '~> 2.8'
+gem 'ruby-openai', '~> 6.0'
+gem 'roo', '~> 2.10'
+gem 'redcarpet', '~> 3.6'  # Markdown rendering
+gem 'jbuilder'
+gem 'tzinfo-data', platforms: %i[mingw mswin x64_mingw jruby]
+gem 'bootsnap', require: false
+gem 'sprockets-rails'
+gem 'importmap-rails'
+
+group :development do
+  gem 'web-console'
+end

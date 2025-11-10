@@ -1,0 +1,49 @@
+<header>
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <h1>Generate Articles</h1>
+      <p class="subtitle">Create programming articles using AI</p>
+    </div>
+    <div>
+      <%= link_to "Back to Blog", blog_path, class: "btn btn-secondary" %>
+    </div>
+  </div>
+</header>
+
+<div class="main-content">
+  <div class="left-column" style="grid-column: 1 / -1;">
+    <div class="panel">
+      <%= form_with url: blog_generate_path, method: :post, local: true do |f| %>
+        <div class="form-group">
+          <label for="topics">Article Topics</label>
+          <p style="color: #6b7280; font-size: 13px; margin-bottom: 12px; font-weight: 400;">
+            Enter topics in any of these formats:<br>
+            • <strong>Simple:</strong> Deep Learning - What is it and how is it different from Machine Learning?<br>
+            • <strong>Multi-line:</strong> Title: Deep Learning (on one line) Details: Explanation here (on next line)
+          </p>
+          <%= f.text_area :topics, 
+            rows: 12,
+            placeholder: "Deep Learning - What is it and how is it different from Machine Learning?\n\nOr use multi-line format:\nTitle: Python Async Programming\nDetails: Cover asyncio, async/await syntax, and practical examples",
+            style: "font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace; font-size: 13px;" %>
+        </div>
+
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <%= f.submit "Generate Articles", 
+            class: "btn btn-primary",
+            data: { confirm: "This will generate articles using AI. Continue?" } %>
+          <span style="color: #6b7280; font-size: 13px;">Generation may take 1-2 minutes</span>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="panel">
+      <h2>Tips</h2>
+      <ul style="list-style: disc; margin-left: 20px; color: #4b5563; font-size: 14px; line-height: 1.8;">
+        <li>Each line should contain one topic</li>
+        <li>Use the format: <strong>Title - Details</strong> or <strong>Title : Details</strong></li>
+        <li>Details are optional but help generate better content</li>
+        <li>You can generate multiple articles at once</li>
+      </ul>
+    </div>
+  </div>
+</div>

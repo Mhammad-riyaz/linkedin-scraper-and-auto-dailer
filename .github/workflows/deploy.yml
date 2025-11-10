@@ -1,0 +1,200 @@
+name: Build and Deploy to AWS EC2
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  DOCKER_REGISTRY: ghcr.io
+  LINKEDIN_SCRAPING_IMAGE: ghcr.io/${{ github.repository_owner }}/linkedin-scraping
+  AUTODIALER_IMAGE: ghcr.io/${{ github.repository_owner }}/autodialer
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push LinkedIn Scraping image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./linkedin-scraping
+          file: ./linkedin-scraping/Dockerfile
+          push: true
+          tags: |
+            ${{ env.LINKEDIN_SCRAPING_IMAGE }}:latest
+            ${{ env.LINKEDIN_SCRAPING_IMAGE }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.LINKEDIN_SCRAPING_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.LINKEDIN_SCRAPING_IMAGE }}:buildcache,mode=max
+
+      - name: Build and push Autodialer image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./Autodialer
+          file: ./Autodialer/Dockerfile
+          push: true
+          tags: |
+            ${{ env.AUTODIALER_IMAGE }}:latest
+            ${{ env.AUTODIALER_IMAGE }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.AUTODIALER_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.AUTODIALER_IMAGE }}:buildcache,mode=max
+
+  deploy-linkedin-scraping:
+    name: Deploy LinkedIn Scraping to EC2
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Deploy to LinkedIn Scraping EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.LINKEDIN_EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Login to GitHub Container Registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Pull latest image
+            docker pull ${{ env.LINKEDIN_SCRAPING_IMAGE }}:latest
+            
+            # Stop and remove old container
+            docker stop linkedin-scraping || true
+            docker rm linkedin-scraping || true
+            
+            # Run new container
+            docker run -d \
+              --name linkedin-scraping \
+              --restart unless-stopped \
+              -p 5000:5000 \
+              -e LINKEDIN_EMAIL="${{ secrets.LINKEDIN_EMAIL }}" \
+              -e LINKEDIN_PASSWORD="${{ secrets.LINKEDIN_PASSWORD }}" \
+              -e HEADLESS_MODE=true \
+              -e FLASK_ENV=production \
+              -v /home/${{ secrets.EC2_USERNAME }}/linkedin-scraping/output:/app/output \
+              ${{ env.LINKEDIN_SCRAPING_IMAGE }}:latest
+            
+            # Clean up old images
+            docker image prune -af
+            
+            # Check if nginx is installed, if not install and configure
+            if ! command -v nginx &> /dev/null; then
+              sudo apt-get update
+              sudo apt-get install -y nginx
+            fi
+            
+            # Configure nginx reverse proxy
+            sudo tee /etc/nginx/sites-available/linkedin-scraping > /dev/null <<'EOF'
+            server {
+                listen 80;
+                server_name _;
+                
+                location / {
+                    proxy_pass http://localhost:5000;
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                    proxy_read_timeout 300s;
+                    proxy_connect_timeout 75s;
+                }
+            }
+            EOF
+            
+            # Enable site and restart nginx
+            sudo ln -sf /etc/nginx/sites-available/linkedin-scraping /etc/nginx/sites-enabled/
+            sudo rm -f /etc/nginx/sites-enabled/default
+            sudo nginx -t && sudo systemctl restart nginx
+
+  deploy-autodialer:
+    name: Deploy Autodialer to EC2
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Deploy to Autodialer EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.AUTODIALER_EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Login to GitHub Container Registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Pull latest image
+            docker pull ${{ env.AUTODIALER_IMAGE }}:latest
+            
+            # Stop and remove old container
+            docker stop autodialer || true
+            docker rm autodialer || true
+            
+            # Generate SECRET_KEY_BASE if not exists
+            SECRET_KEY_BASE="${{ secrets.SECRET_KEY_BASE }}"
+            if [ -z "$SECRET_KEY_BASE" ]; then
+              SECRET_KEY_BASE=$(openssl rand -hex 64)
+            fi
+            
+            # Run new container
+            docker run -d \
+              --name autodialer \
+              --restart unless-stopped \
+              -p 3000:3000 \
+              -e RAILS_ENV=production \
+              -e TWILIO_ACCOUNT_SID="${{ secrets.TWILIO_ACCOUNT_SID }}" \
+              -e TWILIO_AUTH_TOKEN="${{ secrets.TWILIO_AUTH_TOKEN }}" \
+              -e TWILIO_PHONE_NUMBER="${{ secrets.TWILIO_PHONE_NUMBER }}" \
+              -e OPENROUTER_API_KEY="${{ secrets.OPENROUTER_API_KEY }}" \
+              -e OPEN_ROUTER_API_KEY="${{ secrets.OPENROUTER_API_KEY }}" \
+              -e LLM_MODEL="${{ secrets.LLM_MODEL }}" \
+              -e SECRET_KEY_BASE="$SECRET_KEY_BASE" \
+              -v /home/${{ secrets.EC2_USERNAME }}/autodialer/db:/app/db \
+              -v /home/${{ secrets.EC2_USERNAME }}/autodialer/log:/app/log \
+              -v /home/${{ secrets.EC2_USERNAME }}/autodialer/output:/app/lib/python_scripts/output \
+              ${{ env.AUTODIALER_IMAGE }}:latest
+            
+            # Clean up old images
+            docker image prune -af
+            
+            # Check if nginx is installed, if not install and configure
+            if ! command -v nginx &> /dev/null; then
+              sudo apt-get update
+              sudo apt-get install -y nginx
+            fi
+            
+            # Configure nginx reverse proxy
+            sudo tee /etc/nginx/sites-available/autodialer > /dev/null <<'EOF'
+            server {
+                listen 80;
+                server_name _;
+                
+                location / {
+                    proxy_pass http://localhost:3000;
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                    proxy_read_timeout 300s;
+                    proxy_connect_timeout 75s;
+                }
+            }
+            EOF
+            
+            # Enable site and restart nginx
+            sudo ln -sf /etc/nginx/sites-available/autodialer /etc/nginx/sites-enabled/
+            sudo rm -f /etc/nginx/sites-enabled/default
+            sudo nginx -t && sudo systemctl restart nginx

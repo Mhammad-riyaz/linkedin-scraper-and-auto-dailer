@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  linkedin-scraping:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - LINKEDIN_EMAIL=${LINKEDIN_EMAIL}
+      - LINKEDIN_PASSWORD=${LINKEDIN_PASSWORD}
+      - HEADLESS_MODE=true
+      - FLASK_ENV=production
+    volumes:
+      - ./output:/app/output
+    restart: unless-stopped

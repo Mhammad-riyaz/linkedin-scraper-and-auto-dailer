@@ -1,0 +1,52 @@
+<header>
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <h1>Blog</h1>
+      <p class="subtitle">Programming Articles & Tutorials</p>
+    </div>
+    <div style="display: flex; gap: 12px;">
+      <%= link_to "Back to Autodialer", root_path, class: "btn btn-secondary" %>
+      <%= link_to "Generate New Articles", blog_new_path, class: "btn btn-primary" %>
+    </div>
+  </div>
+</header>
+
+<div class="main-content">
+  <div class="left-column" style="grid-column: 1 / -1;">
+    <div class="panel" style="height: 100%; overflow-y: auto;">
+      <% if @articles.empty? %>
+        <div style="text-align: center; padding: 40px 20px; color: #6b7280;">
+          <p style="font-size: 16px; margin-bottom: 8px;">No articles yet</p>
+          <p style="font-size: 14px;">Click "Generate New Articles" to create some!</p>
+        </div>
+      <% else %>
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          <% @articles.each do |article| %>
+            <div style="border-bottom: 1px solid #e5e5e5; padding-bottom: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                <h2 style="margin: 0; flex: 1;">
+                  <%= link_to article.title, blog_article_path(article), style: "color: #1a1a1a; text-decoration: none; font-size: 20px; font-weight: 600; display: block; transition: color 0.2s;" %>
+                </h2>
+                <%= button_to "Delete", blog_article_path(article), method: :delete, class: "btn btn-danger", data: { confirm: "Are you sure you want to delete this article?" }, style: "margin-left: 12px;" %>
+              </div>
+              <div style="color: #6b7280; font-size: 13px; margin-bottom: 12px;">
+                Generated <%= article.generated_at&.strftime("%B %d, %Y at %I:%M %p") || article.created_at.strftime("%B %d, %Y at %I:%M %p") %>
+              </div>
+              <div style="color: #4b5563; font-size: 14px; line-height: 1.6; margin-bottom: 12px;">
+                <%= truncate(strip_tags(article.content), length: 250) %>
+              </div>
+              <%= link_to "Read More →", blog_article_path(article), style: "color: #1a1a1a; text-decoration: none; font-size: 14px; font-weight: 500;" %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<style>
+  a[href*="blog_article"]:hover h2,
+  a[href*="blog_article"]:hover {
+    color: #000000 !important;
+  }
+</style>
