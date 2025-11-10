@@ -68,7 +68,7 @@ jobs:
         with:
           host: ${{ secrets.LINKEDIN_EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.LINKEDIN_EC2_SSH_KEY }}
           script: |
             # Login to GitHub Container Registry
             echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -135,7 +135,7 @@ jobs:
         with:
           host: ${{ secrets.AUTODIALER_EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.AUTODIALER_EC2_SSH_KEY }}
           script: |
             # Login to GitHub Container Registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
