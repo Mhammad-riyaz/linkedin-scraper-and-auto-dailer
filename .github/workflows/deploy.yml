@@ -150,6 +150,19 @@ jobs:
             # Generate SECRET_KEY_BASE (required for Rails production)
             SECRET_KEY_BASE=$(openssl rand -hex 64)
             
+            # Set default values for optional secrets
+            TWILIO_SID="${{ secrets.TWILIO_ACCOUNT_SID }}"
+            TWILIO_TOKEN="${{ secrets.TWILIO_AUTH_TOKEN }}"
+            TWILIO_PHONE="${{ secrets.TWILIO_PHONE_NUMBER }}"
+            OPENROUTER_KEY="${{ secrets.OPENROUTER_API_KEY }}"
+            LLM_MODEL_VAR="${{ secrets.LLM_MODEL }}"
+            
+            # Use defaults if not set
+            : ${TWILIO_SID:=test_sid}
+            : ${TWILIO_TOKEN:=test_token}
+            : ${TWILIO_PHONE:=+15005550006}
+            : ${LLM_MODEL_VAR:=openai/gpt-4o-mini}
+            
             # Run new container
             docker run -d \
               --name autodialer \
@@ -157,12 +170,12 @@ jobs:
               -p 3000:3000 \
               -e RAILS_ENV=production \
               -e SECRET_KEY_BASE="$SECRET_KEY_BASE" \
-              -e TWILIO_ACCOUNT_SID="${{ secrets.TWILIO_ACCOUNT_SID || 'test_sid' }}" \
-              -e TWILIO_AUTH_TOKEN="${{ secrets.TWILIO_AUTH_TOKEN || 'test_token' }}" \
-              -e TWILIO_PHONE_NUMBER="${{ secrets.TWILIO_PHONE_NUMBER || '+15005550006' }}" \
-              -e OPENROUTER_API_KEY="${{ secrets.OPENROUTER_API_KEY }}" \
-              -e OPEN_ROUTER_API_KEY="${{ secrets.OPENROUTER_API_KEY }}" \
-              -e LLM_MODEL="${{ secrets.LLM_MODEL || 'openai/gpt-4o-mini' }}" \
+              -e TWILIO_ACCOUNT_SID="$TWILIO_SID" \
+              -e TWILIO_AUTH_TOKEN="$TWILIO_TOKEN" \
+              -e TWILIO_PHONE_NUMBER="$TWILIO_PHONE" \
+              -e OPENROUTER_API_KEY="$OPENROUTER_KEY" \
+              -e OPEN_ROUTER_API_KEY="$OPENROUTER_KEY" \
+              -e LLM_MODEL="$LLM_MODEL_VAR" \
               -v /home/${{ secrets.EC2_USERNAME }}/autodialer/db:/app/db \
               -v /home/${{ secrets.EC2_USERNAME }}/autodialer/log:/app/log \
               -v /home/${{ secrets.EC2_USERNAME }}/autodialer/output:/app/lib/python_scripts/output \

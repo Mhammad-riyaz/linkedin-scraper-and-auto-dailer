@@ -28,13 +28,34 @@ RUN pip3 install --no-cache-dir --break-system-packages \
 COPY . .
 
 # Create necessary directories
-RUN mkdir -p tmp/pids tmp/cache tmp/sockets log lib/python_scripts/output
+RUN mkdir -p tmp/pids tmp/cache tmp/sockets log lib/python_scripts/output db
 
 # Precompile assets (if using asset pipeline)
 RUN bundle exec rake assets:precompile RAILS_ENV=production || true
 
-# Create database and run migrations
-RUN bundle exec rake db:create db:migrate RAILS_ENV=production || true
+# Create startup script
+RUN echo '#!/bin/bash\n\
+set -e\n\
+\n\
+echo "Starting Autodialer..."\n\
+\n\
+# Remove any existing server.pid\n\
+rm -f /app/tmp/pids/server.pid\n\
+\n\
+# Setup database if it does not exist\n\
+if [ ! -f /app/db/production.sqlite3 ]; then\n\
+  echo "Database not found, creating..."\n\
+  bundle exec rake db:create RAILS_ENV=production\n\
+  bundle exec rake db:migrate RAILS_ENV=production\n\
+  bundle exec rake db:seed RAILS_ENV=production || true\n\
+else\n\
+  echo "Database found, running migrations..."\n\
+  bundle exec rake db:migrate RAILS_ENV=production\n\
+fi\n\
+\n\
+echo "Starting Rails server..."\n\
+exec bundle exec rails server -b 0.0.0.0 -p 3000\n\
+' > /app/start.sh && chmod +x /app/start.sh
 
 # Expose port 3000
 EXPOSE 3000
@@ -45,4 +66,4 @@ ENV RAILS_LOG_TO_STDOUT=true
 ENV RAILS_SERVE_STATIC_FILES=true
 
 # Start Rails server
-CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0", "-p", "3000"]
+CMD ["/app/start.sh"]
