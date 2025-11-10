@@ -5,6 +5,7 @@ FROM ruby:3.2-slim
 RUN apt-get update -qq && apt-get install -y \
     build-essential \
     libsqlite3-dev \
+    libyaml-dev \
     nodejs \
     python3 \
     python3-pip \
