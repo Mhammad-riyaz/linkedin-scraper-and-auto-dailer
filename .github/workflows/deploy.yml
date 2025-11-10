@@ -10,6 +10,10 @@ env:
   LINKEDIN_SCRAPING_IMAGE: ghcr.io/mhammad-riyaz/linkedin-scraping
   AUTODIALER_IMAGE: ghcr.io/mhammad-riyaz/autodialer
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build-and-push:
     name: Build and Push Docker Images
