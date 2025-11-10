@@ -147,11 +147,8 @@ jobs:
             docker stop autodialer || true
             docker rm autodialer || true
             
-            # Generate SECRET_KEY_BASE if not exists
-            SECRET_KEY_BASE="${{ secrets.SECRET_KEY_BASE }}"
-            if [ -z "$SECRET_KEY_BASE" ]; then
-              SECRET_KEY_BASE=$(openssl rand -hex 64)
-            fi
+            # Generate SECRET_KEY_BASE (required for Rails production)
+            SECRET_KEY_BASE=$(openssl rand -hex 64)
             
             # Run new container
             docker run -d \
@@ -159,13 +156,13 @@ jobs:
               --restart unless-stopped \
               -p 3000:3000 \
               -e RAILS_ENV=production \
-              -e TWILIO_ACCOUNT_SID="${{ secrets.TWILIO_ACCOUNT_SID }}" \
-              -e TWILIO_AUTH_TOKEN="${{ secrets.TWILIO_AUTH_TOKEN }}" \
-              -e TWILIO_PHONE_NUMBER="${{ secrets.TWILIO_PHONE_NUMBER }}" \
+              -e SECRET_KEY_BASE="$SECRET_KEY_BASE" \
+              -e TWILIO_ACCOUNT_SID="${{ secrets.TWILIO_ACCOUNT_SID || 'test_sid' }}" \
+              -e TWILIO_AUTH_TOKEN="${{ secrets.TWILIO_AUTH_TOKEN || 'test_token' }}" \
+              -e TWILIO_PHONE_NUMBER="${{ secrets.TWILIO_PHONE_NUMBER || '+15005550006' }}" \
               -e OPENROUTER_API_KEY="${{ secrets.OPENROUTER_API_KEY }}" \
               -e OPEN_ROUTER_API_KEY="${{ secrets.OPENROUTER_API_KEY }}" \
-              -e LLM_MODEL="${{ secrets.LLM_MODEL }}" \
-              -e SECRET_KEY_BASE="$SECRET_KEY_BASE" \
+              -e LLM_MODEL="${{ secrets.LLM_MODEL || 'openai/gpt-4o-mini' }}" \
               -v /home/${{ secrets.EC2_USERNAME }}/autodialer/db:/app/db \
               -v /home/${{ secrets.EC2_USERNAME }}/autodialer/log:/app/log \
               -v /home/${{ secrets.EC2_USERNAME }}/autodialer/output:/app/lib/python_scripts/output \
